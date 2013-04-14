@@ -1,0 +1,28 @@
+{
+  "name": "crossbone",
+  "version": "0.1.0",
+  "description": "",
+  "keywords": [
+    
+  ],
+  "author": {
+    "name": "James Ivings",
+    "url": "http://james.ivings.name"
+  },
+  "homepage": "https://github.com/Jivings/crossbone.js",
+  "main": "./index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jivings/crossbone.js.git"
+  },
+  "devDependencies": {
+    "d3": "3.0.x",
+    "crossfilter": "1.2.x",
+    "backbone": "1.0.x",
+    "mocha": "0.7.x",
+    "uglify-js": "git://github.com/mishoo/UglifyJS2.git#aebafad4"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha"
+  }
+}
