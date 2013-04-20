@@ -11,22 +11,15 @@
 
 
   <div id="charts">
-    <div id="hour-chart" class="chart">
+    <div id="pie-chart" class="chart">
       <div class="title">Time of Day</div>
     </div>
-    <div id="delay-chart" class="chart">
-      <div class="title">Arrival Delay (min.)</div>
-    </div>
-    <div id="distance-chart" class="chart">
-      <div class="title">Distance (mi.)</div>
-    </div>
-    <div id="date-chart" class="chart">
-      <div class="title">Date</div>
-    </div>
+    
 
     <div id="data-count">
       <span class="filtered"></span> selected from <span class="total"></span>
     </div>
+
   </div>
 
   <script src="../test/vendor/jquery.js"></script>
@@ -36,14 +29,6 @@
   <script src="../test/vendor/crossfilter.js"></script>
   <script src="backbone.localstorage.js"></script>
   <script src="../crossbone.js"></script>
-  <script src="../lib/barChart.js"></script>
-
-  <template id="chartTemplate">
-    <div class="chart">
-      <div class="title">
-      </div>
-    </div>
-  </template>
 
 
 
@@ -52,14 +37,21 @@
 
     d3.csv("flights-3m.json", function( data ) {
 
-      var crossbone = new CrossBone({
-        data: data
-      });
+      var crossbone = new CrossBone(data);
 
       crossbone.dataChart('#data-count', {
         dimension: crossbone.all(),
         group: crossbone.groupAll()
       });
+
+      var hour = flight.dimension(function(d) { return d.date.getHours() + d.date.getMinutes() / 60; })
+      var hours = hour.group(Math.floor);
+
+      crossbone.pieChart('#pie-chart', {
+        dimension: hour,
+        group: hours
+      })
+
 
       crossbone.renderAll();
 
