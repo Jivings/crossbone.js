@@ -2,6 +2,9 @@
 
   'use strict'
 
+  // FIXME
+  var filtered = false;
+
   var ChartList = Backbone.Collection.extend({
     model: BaseChart,
     // store built charts in localstorage
@@ -30,6 +33,12 @@
       this.chartViews = [];
     },
 
+    dimension: function() {
+      return typeof arguments[0] === 'string' 
+        ? this.crossfilter.dimension(function(d) { return arguments[0] } )
+        : this.crossfilter.dimension(arguments[0]);
+    },
+
     chart: function(chart) {
       chart.preRender(this.crossfilter, this.all);
       this.charts.add(chart);
@@ -44,7 +53,7 @@
 
     preRender: function(chart) {
       // create the chart view
-      var chartView = new DataChartView({
+      var chartView = new chart.view({
         model: chart       
       });
       // pre-render the chart so it can be 
@@ -59,6 +68,7 @@
     all: function() {
       return this.crossfilter;
     },
+
     groupAll: function() {
       return this.group;
     },
@@ -71,8 +81,11 @@
 
     dataChart: function(id, o) {
       this.add(new DataChart(id, o));
-    }
+    },
 
+    pieChart: function(id, o) {
+      this.add(new PieChart(id, o));
+    }
   });
 
   var BaseChart = Backbone.Model.extend({
@@ -81,7 +94,10 @@
       return {
         title: 'Base Chart',
         height: 200,
-        width: 200
+        width: 200,
+        color: function(i) {
+          return d3.scale.category20().range()[i];
+        }
       }
     },
 
@@ -102,6 +118,7 @@
       this.listenTo(this.model, 'change', this.render);
       this.$el = $(this.model.get('id'));
     }
+    
   });
 
   /*
@@ -123,6 +140,7 @@
   });
 
   var DataChart = BaseChart.extend({
+    view: DataChartView,
     defaults: _.extend({}, BaseChart.prototype.defaults(), { 
       title : 'Data',
       filteredRecords: '.filtered',
@@ -143,51 +161,83 @@
    */ 
   var PieChartView = BaseChartView.extend({
     render: function() {
-      var width = this.model.get('width'),
-          height = this.model.get('height'),
-          radius = Math.min(width, height) / 2;
+      var width, height, radius, color,
+          arc, pie, svg, pieData, g, key, 
+          model, el, chart;
 
-      var color = this.model.get('color');
+      model  = this.model;
+      width  = model.get('width');
+      height = model.get('height');
+      radius = Math.min(width, height) / 2;
+      color  = model.get('color');
       
-
-      var arc = d3.svg.arc()
+      pieData = model.get('group').orderNatural().top(Infinity)
+      arc = d3.svg.arc()
           .outerRadius(radius - 10)
           .innerRadius(0);
 
-      var pie = d3.layout.pie()
-          .sort(null)
-          .value(function(d) { return this.model.group().size(); }) ;
+      pie = d3.layout.pie()
+       .sort(null)
+       .value(function(d) { 
+          return model.get('group').size(); 
+        });
 
-      var svg = d3.select("body").append("svg")
-          .attr("width", width)
-          .attr("height", height)
-        .append("g")
-          .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+      // convert to d3 element for processing.
+      el = d3.select(this.$el[0]);
+      svg = el.append("svg")
+        .attr("width", width)
+        .attr("height", height);
 
-      var pieData = this.model.group().naturalOrder().top(Infinity)
+      key = svg.append('g')
+        .attr('class', 'key');    
+      chart = svg.append("g")
+        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
-        var g = svg.selectAll(".arc")
-            .data(pie(pieData))
-          .enter().append("g")
-            .attr("class", "arc");
+      g = chart.selectAll(".arc")
+          .data(pie(pieData))
+        .enter().append("g")
+          .attr("class", "arc")
 
-        g.append("path")
-            .attr("d", arc)
+      g.append("path")
+        .attr("d", arc)
+        .attr('fill', function(d, i) {
+          return color(i);
+        })
+        .on('mouseover', function(d, i) {
+          d3.select(this)
+            .attr('transform', "matrix(1.1, 1,1, 0, 0, -35, -35)")
+            .attr('stroke-width', '1px')
+        })
+        .on('mouseout', function() {
+          d3.select(this)
+            .attr('transform', "matrix(1,0,0,1,0,0)")
+            .attr('stroke-width', '2px')
+        })
+        .on('click', function(d, i) {
+          filtered = !filtered;
+          g.selectAll('path')
+            .attr('fill', 'grey' )
+          d3.select(this)
+            .attr('fill', color(i))
+        })
+        .attr('stroke-width', '2px')
+        .attr('transform', 'matrix(1,0,0,1,0,0)')
 
-        g.append("text")
-            .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
-            .attr("dy", ".35em")
-            .style("text-anchor", "middle")
+    
+      key.append("text")
+        .style("text-anchor", "middle")
 
+      // convert back to jQuery element for Backbone storage
+      this.$el = $(svg[0]);
+
+      return this;
     }
   });
 
   var PieChart = BaseChart.extend({
+    view: PieChartView,
     defaults: _.extend({}, BaseChart.prototype.defaults(), { 
-      title : 'Data',
-      color : d3.scale.ordinal()
-                .range(["#98abc5", "#8a89a6", "#7b6888", 
-                  "#6b486b", "#a05d56", "#d0743c", "#ff8c00"])
+      title : 'Data'
     }),
   });
   

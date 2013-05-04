@@ -5,6 +5,10 @@ body {
   min-height: 2000px;
 }
 
+.arc path {
+  stroke: #ffffff;
+}  
+
 #body {
   position: relative;
 }
@@ -46,7 +50,6 @@ h1, h2 {
 
 .chart {
   display: inline-block;
-  height: 151px;
   margin-bottom: 20px;
 }
 

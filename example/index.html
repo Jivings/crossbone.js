@@ -37,6 +37,13 @@
 
     d3.csv("flights-3m.json", function( data ) {
 
+      data.forEach(function(d, i) {
+        d.date = parseDate(d.date);
+        d.delay = +d.delay;
+        d.distance = +d.distance;
+        d.index = i;
+      })
+
       var crossbone = new CrossBone(data);
 
       crossbone.dataChart('#data-count', {
@@ -44,7 +51,9 @@
         group: crossbone.groupAll()
       });
 
-      var hour = flight.dimension(function(d) { return d.date.getHours() + d.date.getMinutes() / 60; })
+      var hour = crossbone.dimension(function(d) { 
+        return d.date.getHours() + d.date.getMinutes() / 60; 
+      })
       var hours = hour.group(Math.floor);
 
       crossbone.pieChart('#pie-chart', {
@@ -56,6 +65,14 @@
       crossbone.renderAll();
 
     });
+
+    function parseDate(d) {
+      return new Date(2001, 
+        d.substring(0, 2) -1,
+        d.substring(2, 4),
+        d.substring(4, 6),
+        d.substring(6, 8));
+    }
 
     
   
