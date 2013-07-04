@@ -2,7 +2,7 @@ requirejs.config({
 	baseUrl: '../lib/vendor',
 	paths: {
 		app: '../',
-		data: '../../module-example/npower',
+		data: '../../example/npower',
 		chart: '../charts'
 	},
 
