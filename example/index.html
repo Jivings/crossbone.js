@@ -3,8 +3,13 @@
 <head>
   <meta charset='utf8'>
   <title>An example CrossBone app</title>
-  <link rel="stylesheet" href="style.css" type="text/css" media="screen">
+  <!-- <link rel="stylesheet" href="style.css" type="text/css" media="screen"> -->
   
+  <style>
+  path {
+    stoke: #fff;
+  }
+  </style>
 </head>
 
   <h1>CrossBone</h1>
@@ -15,6 +20,8 @@
       <div class="title">Time of Day</div>
     </div>
     
+    <div id="barChart">
+    </div>
 
     <div id="data-count">
       <span class="filtered"></span> selected from <span class="total"></span>
@@ -27,6 +34,7 @@
   <script src="../test/vendor/backbone.js"></script>
   <script src="../test/vendor/d3.js"></script>
   <script src="../test/vendor/crossfilter.js"></script>
+  <script src="../test/vendor/queue.js"></script>
   <script src="backbone.localstorage.js"></script>
   <script src="../crossbone.js"></script>
 
@@ -35,36 +43,66 @@
   <script>
 
 
-    d3.csv("flights-3m.json", function( data ) {
+    queue()
+      .defer(d3.json, "npower/consumerData.json")
+      .defer(d3.json, "countries.geo.json")
+      .await(ready);
 
-      data.forEach(function(d, i) {
-        d.date = parseDate(d.date);
-        d.delay = +d.delay;
-        d.distance = +d.distance;
-        d.index = i;
-      })
 
-      var crossbone = new CrossBone(data);
+    function ready (err, consumerData, countries) {
+
+      var consumptionData = consumerData.energyData.consumptionData;
+      // tweets = flatten(tweets);
+      var crossbone = new CrossBone(consumptionData);
 
       crossbone.dataChart('#data-count', {
         dimension: crossbone.all(),
         group: crossbone.groupAll()
       });
 
-      var hour = crossbone.dimension(function(d) { 
-        return d.date.getHours() + d.date.getMinutes() / 60; 
-      })
-      var hours = hour.group(Math.floor);
+      var loftInsulation = crossbone.dimension('loftInsulation');
+      var currentSupplier = crossbone.dimension('currentSupplier');
+      // crossbone.geoChart('#geo', {
+      //   dimension: null,
+      //   group: null,
+      //   geoJSON: countries,
+      //   zoomable: false,
+      //   projection: d3.geo.mercator(),
+      //   width: 900,
+      //   height: 450
+      // });
 
-      crossbone.pieChart('#pie-chart', {
-        dimension: hour,
-        group: hours
-      })
+      crossbone.pieChart('#pieChart', {
+        dimension: loftInsulation,
+        group: loftInsulation.group()
+      });
 
+      crossbone.barChart('#barChart', {
+        dimension: currentSupplier,
+        group: currentSupplier.group()
+      });
 
       crossbone.renderAll();
 
-    });
+    };
+
+    function flatten (tweets) {
+      var flat = [];
+      _.each(tweets, function(tweet) {
+        var t = {
+          time  : new Date(tweet.time),
+          text  : tweet.text
+        };
+        if ( tweet.geo.place ) {
+          t.country_code = tweet.geo.place.country_code || ''
+        }
+        if ( tweet.geo.geo ) {
+          t.geo = tweet.geo.geo.coordinates
+        }
+        flat.push(t)        
+      });
+      return flat;
+    };
 
     function parseDate(d) {
       return new Date(2001, 
@@ -78,4 +116,28 @@
   
   </script>
 
-</html>
+  <script>
+
+    // var width = 960,
+    //     height = 500;
+
+    // var projection = d3.geo.mercator()
+    //     .scale(width)
+
+    // var path = d3.geo.path()
+    //     .projection(projection);
+
+    // var svg = d3.select("body").append("svg")
+    //     .attr("width", width)
+    //     .attr("height", height);
+
+    // d3.json("countries.geo.json", function(json) {
+    //   features = svg.selectAll("path")
+    //       .data(json.features)
+    //     .enter().append("path")
+    //       .attr("d", path)
+    // });
+
+  </script>
+
+</html>P
